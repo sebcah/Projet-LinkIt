@@ -8,8 +8,10 @@
 #include <LWiFi.h>
 #include <LWiFiClient.h>
 #include <LDateTime.h>
-#define WIFI_AP "freebox_TSNLVB_EXT" // wifi name
-#define WIFI_PASSWORD "iletaitunpetitnavire" // password name
+#define WIFI_AP "freebox_ISA" // wifi name
+#define WIFI_PASSWORD "belier2010" // password name
+//#define WIFI_AP "freebox_TSNLVB_EXT"
+//#define WIFI_PASSWORD "iletaitunpetitnavire"
 #define WIFI_AUTH LWIFI_WPA  // choose from LWIFI_OPEN, LWIFI_WPA, or LWIFI_WEP.
 #define per 50
 #define per1 3
@@ -53,7 +55,7 @@ void getconnectInfo(){
   int errorcount = 0;
   while (!c2.available())
   {
-    Serial.println("waiting HTTP response: ");
+    Serial.print("waiting HTTP response: ");
     Serial.println(errorcount);
     errorcount += 1;
     if (errorcount > 10) {
@@ -90,6 +92,7 @@ void getconnectInfo(){
       c2.stop();
     }  
   }
+  Serial.println();
   Serial.print("The connection info: ");
   Serial.println(connection_info);
   int i;
@@ -162,7 +165,6 @@ void uploadstatus(){
   int bodyLen = http.contentLength();
   Serial.print("Content length is: ");
   Serial.println(bodyLen);
-  Serial.println();
   while (c2)
   {
     int v = c2.read();
@@ -175,9 +177,9 @@ void uploadstatus(){
       Serial.println("no more content, disconnect");
       c2.stop();
 
-    }
-    
+    }    
   }
+  Serial.println();
 }
 
 void connectTCP(){
@@ -235,18 +237,19 @@ void setup() {
   pinMode(13, OUTPUT);
   getconnectInfo();
   connectTCP();
+  
   /*********/
   
-  Serial.begin(115200);
   LGPS.powerOn();
   Serial.println("Demarrage GPS..."); 
   delay(3000);
+  
+  Serial.println("*************LOOP**********");
 }
 
 void loop() {
   // put your main code here, to run repeatedly:= int main(void)
   
-  /****************************/
    //Check for TCP socket command from MCS Server 
   String tcpcmd="";
   while (c.available())
