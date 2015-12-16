@@ -1,8 +1,3 @@
-#include <LGPS.h>
-
-gpsSentenceInfoStruct info;
-char buff[256];
-
 static unsigned char getComma(unsigned char num,const char *str)
 {
   unsigned char i,j = 0;
@@ -45,6 +40,7 @@ static double getIntNumber(const char *s)
   return rev; 
 }
 
+
 void parseGPGGA(const char* GPGGAstr)
 {
   /* Refer to http://www.gpsinformation.org/dale/nmea.htm#GGA
@@ -72,8 +68,7 @@ void parseGPGGA(const char* GPGGAstr)
    *  (empty field) DGPS station ID number
    *  *47          the checksum data, always begins with *
    */
-  double latitude;
-  double longitude;
+  
   int tmp, hour, minute, second, num ;
   if(GPGGAstr[0] == '$')
   {
@@ -83,19 +78,26 @@ void parseGPGGA(const char* GPGGAstr)
     second    = (GPGGAstr[tmp + 4] - '0') * 10 + (GPGGAstr[tmp + 5] - '0');
     
     sprintf(buff, "UTC timer %2d-%2d-%2d", hour, minute, second);
-    Serial.println(buff);
+    //Serial.println(buff);
     
     tmp = getComma(2, GPGGAstr);
-    latitude = getDoubleNumber(&GPGGAstr[tmp]);
+    latitude = getDoubleNumber(&GPGGAstr[tmp])/100.0;
+    int latitude_int=floor(latitude);
+    double latitude_decimal=(latitude-latitude_int)*100.0/60.0;
+    latitude=latitude_int+latitude_decimal;
     tmp = getComma(4, GPGGAstr);
-    longitude = getDoubleNumber(&GPGGAstr[tmp]);
+    longitude = getDoubleNumber(&GPGGAstr[tmp])/100.0;
+    int longitude_int=floor(longitude);
+    double longitude_decimal=(longitude-longitude_int)*100.0/60.0;
+    longitude=longitude_int+longitude_decimal;
+    
     sprintf(buff, "latitude = %10.4f, longitude = %10.4f", latitude, longitude);
-    Serial.println(buff); 
+    //Serial.println(buff); 
     
     tmp = getComma(7, GPGGAstr);
     num = getIntNumber(&GPGGAstr[tmp]);    
     sprintf(buff, "satellites number = %d", num);
-    Serial.println(buff); 
+    //Serial.println(buff); 
   }
   else
   {
@@ -103,19 +105,8 @@ void parseGPGGA(const char* GPGGAstr)
   }
 }
 
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  LGPS.powerOn();
-  Serial.println("LGPS Power on, and waiting ..."); 
-  delay(3000);
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  Serial.println("LGPS loop"); 
+void GPS_receive() {
   LGPS.getData(&info);
-  Serial.println((char*)info.GPGGA); 
+  //Serial.println((char*)info.GPGGA); 
   parseGPGGA((const char*)info.GPGGA);
-  delay(2000);
 }
