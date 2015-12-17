@@ -261,11 +261,13 @@ void loop() {
         tcpcmd += (char)v;
         if (tcpcmd.substring(40).equals(tcpcmd_led_on)){
           digitalWrite(13, HIGH);
-          Serial.print("Switch LED ON ");
+          Serial.println();
+          Serial.println("Switch LED ON ");
           tcpcmd="";
         }else if(tcpcmd.substring(40).equals(tcpcmd_led_off)){  
           digitalWrite(13, LOW);
-          Serial.print("Switch LED OFF");
+          Serial.println();
+          Serial.println("Switch LED OFF");
           tcpcmd="";
         }
       }
