@@ -8,13 +8,13 @@
 #include <LWiFi.h>
 #include <LWiFiClient.h>
 #include <LDateTime.h>
-#define WIFI_AP "Linksys03021"
-#define WIFI_PASSWORD "qgkhraus12"
+#define WIFI_AP "freebox_ISA"
+#define WIFI_PASSWORD "belier2010"
 #define WIFI_AUTH LWIFI_WPA  // choose from LWIFI_OPEN, LWIFI_WPA, or LWIFI_WEP.
 #define per 50
 #define per1 3
-#define DEVICEID "DUE6z588"
-#define DEVICEKEY "QaY437J8EFV5p0Gs"
+#define DEVICEID "DciBuwJ9" // on MCS website, created with the project
+#define DEVICEKEY "biiuBqGb8s60iHWT" // on MCS website, created with the project
 #define SITE_URL "api.mediatek.com"
 
 gpsSentenceInfoStruct info;
