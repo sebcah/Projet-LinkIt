@@ -8,13 +8,13 @@
 #include <LWiFi.h>
 #include <LWiFiClient.h>
 #include <LDateTime.h>
-#define WIFI_AP "Linksys03021"
-#define WIFI_PASSWORD "qgkhraus12"
+#define WIFI_AP "freebox_ISA"
+#define WIFI_PASSWORD "belier2010"
 #define WIFI_AUTH LWIFI_WPA  // choose from LWIFI_OPEN, LWIFI_WPA, or LWIFI_WEP.
 #define per 50
 #define per1 3
-#define DEVICEID "DUE6z588"
-#define DEVICEKEY "QaY437J8EFV5p0Gs"
+#define DEVICEID "DciBuwJ9" // on MCS website, created with the project
+#define DEVICEKEY "biiuBqGb8s60iHWT" // on MCS website, created with the project
 #define SITE_URL "api.mediatek.com"
 
 gpsSentenceInfoStruct info;
@@ -36,8 +36,8 @@ char ip[15]={0};
 int portnum;
 int val = 0;
 String tcpdata = String(DEVICEID) + "," + String(DEVICEKEY) + ",0";
-String tcpcmd_led_on = String(DEVICEID) + "," + String(DEVICEKEY) + ",0,LED_CONTROL,on";
-String tcpcmd_led_off = String(DEVICEID) + "," + String(DEVICEKEY) + ",0,LED_CONTROL,off";
+String tcpcmd_led_on = "LED_CONTROL,1";
+String tcpcmd_led_off = "LED_CONTROL,0";
 String upload_led;
 
 LGPRSClient c2;
@@ -46,21 +46,21 @@ HttpClient http(c2);
 
 void setup()
 {
-  pinMode(13, OUTPUT);
+  pinMode(13, OUTPUT); // LED connected to digital pin 13
   LTask.begin();
   LWiFi.begin();
   Serial.begin(115200);
   LGPS.powerOn();
-  while(!Serial);
+  //while(!Serial);
   
-  AP_connect();
+  AP_connect(); //connect.ino : connexion internet
   getconnectInfo();
   connectTCP();
-  Serial.println("==============================");
 }
 
 void loop()
 {
+  Serial.println("*******************");
   String tcpcmd="";
   while (c.available())
    {
@@ -69,13 +69,13 @@ void loop()
       {
         Serial.print((char)v);
         tcpcmd += (char)v;
-        if (tcpcmd.equals(tcpcmd_led_on)){
+        if (tcpcmd.substring(40).equals(tcpcmd_led_on)){
           digitalWrite(13, HIGH);
-          Serial.print("Switch LED ON ");
+          Serial.println("Switch LED ON ");
           tcpcmd="";
-        }else if(tcpcmd.equals(tcpcmd_led_off)){  
+        }else if(tcpcmd.substring(40).equals(tcpcmd_led_off)){  
           digitalWrite(13, LOW);
-          Serial.print("Switch LED OFF");
+          Serial.println("Switch LED OFF");
           tcpcmd="";
         }
       }
@@ -89,8 +89,7 @@ void loop()
   //Check for report datapoint status interval
   LDateTime.getRtc(&rtc1);
   if ((rtc1 - lrtc1) >= per1) {
-    
-    //uploadstatus();
+    uploadstatus();
     GPS_receive();
     uploadGPS();
     lrtc1 = rtc1;

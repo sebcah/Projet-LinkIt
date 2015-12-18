@@ -1,25 +1,24 @@
-//Connection GPS
-#include <LGPS.h> //C:\Program Files (x86)\LinkIt-ONE-IDE-master\hardware\arduino\mtk\libraries\LGPS
-#include "position.h"
-
-//Connection internet
-#include <HttpClient.h> //téléchargé et ajouté à la lib depuis le net https://github.com/amcewen/HttpClient/releases
+//#include <b64.h>
+#include <HttpClient.h>
 #include <LTask.h>
 #include <LWiFi.h>
 #include <LWiFiClient.h>
 #include <LDateTime.h>
-#define WIFI_AP "freebox_ISA" // wifi name
-#define WIFI_PASSWORD "belier2010" // password name
-//#define WIFI_AP "freebox_TSNLVB_EXT"
-//#define WIFI_PASSWORD "iletaitunpetitnavire"
+#define WIFI_AP "freebox_ISA"
+#define WIFI_PASSWORD "belier2010"
 #define WIFI_AUTH LWIFI_WPA  // choose from LWIFI_OPEN, LWIFI_WPA, or LWIFI_WEP.
 #define per 50
 #define per1 3
 #define DEVICEID "DciBuwJ9" // on MCS website, created with the project
 #define DEVICEKEY "biiuBqGb8s60iHWT" // on MCS website, created with the project
 #define SITE_URL "api.mediatek.com"
+#include <LGPS.h>
+double latitude, longitude;
+int tmp;
+char* x;
+gpsSentenceInfoStruct info;
+char buff[256];
 
-/************connection internet**************/
 LWiFiClient c;
 unsigned int rtc;
 unsigned int lrtc;
@@ -37,6 +36,35 @@ String tcpcmd_led_off = "LED_Control,0";
 
 LWiFiClient c2;
 HttpClient http(c2);
+
+void setup()
+{
+  
+  LTask.begin();
+  LWiFi.begin();
+  Serial.begin(115200);
+  LGPS.powerOn();
+  while(!Serial) delay(1000); /* comment out this line when Serial is not present, ie. run this demo without connect to PC */
+
+  Serial.println("Connecting to AP");
+  while (0 == LWiFi.connect(WIFI_AP, LWiFiLoginInfo(WIFI_AUTH, WIFI_PASSWORD)))
+  {
+    delay(1000);
+  }
+  
+  Serial.println("calling connection");
+
+  while (!c2.connect(SITE_URL, 80))
+  {
+    Serial.println("Re-Connecting to WebSite");
+    delay(1000);
+  }
+  delay(100);
+
+  pinMode(13, OUTPUT);
+  getconnectInfo();
+  connectTCP();
+}
 
 void getconnectInfo(){
   //calling RESTful API to get TCP socket connection
@@ -90,7 +118,9 @@ void getconnectInfo(){
     {
       Serial.println("no more content, disconnect");
       c2.stop();
-    }  
+
+    }
+    
   }
   Serial.print("The connection info: ");
   Serial.println(connection_info);
@@ -115,6 +145,18 @@ void getconnectInfo(){
 } //getconnectInfo
 
 void uploadstatus(){
+
+  Serial.println("LGPS loop"); 
+  LGPS.getData(&info);
+  Serial.println((char*)info.GPGGA); 
+  tmp = getComma(2, (char*)info.GPGGA);
+  x = (char*)info.GPGGA;
+  latitude = getDoubleNumber(&x[tmp]);
+  tmp = getComma(4, x);
+  longitude = getDoubleNumber(&x[tmp]);
+  Serial.println(latitude/100.0,6);
+  Serial.println(longitude);
+  
   //calling RESTful API to upload datapoint to MCS to report LED status
   Serial.println("calling connection");
   LWiFiClient c2;  
@@ -124,12 +166,23 @@ void uploadstatus(){
     Serial.println("Re-Connecting to WebSite");
     delay(1000);
   }
-  delay(100);
-  if(digitalRead(13)==1)
-  upload_led = "LED_Display,,1";
-  else
-  upload_led = "LED_Display,,0";
+
+  // The GPS location is based on the latitude, longitude, and meters above sea level
+    
+    //upload_led = 'GPS_Location,,' + longitude + ','  + latitude + ',806';
+
+    upload_led = "GPS_Location,,";
+    upload_led = upload_led + String(longitude/100.0,6);
+    upload_led = upload_led + ",-";
+    upload_led = upload_led + String(latitude/100.0,6);
+    tmp = getComma(9, x);
+    upload_led = upload_led + ",";
+    upload_led = upload_led + getDoubleNumber(&x[tmp]);
+    
+  Serial.println(upload_led);
+  
   int thislength = upload_led.length();
+  
   HttpClient http(c2);
   c2.print("POST /mcs/v2/devices/");
   c2.print(DEVICEID);
@@ -142,8 +195,10 @@ void uploadstatus(){
   c2.println(thislength);
   c2.println("Content-Type: text/csv");
   c2.println("Connection: close");
-  c2.println();
+  c2.println(); 
   c2.println(upload_led);
+
+  
   
   delay(500);
 
@@ -182,6 +237,8 @@ void uploadstatus(){
   }
 }
 
+
+
 void connectTCP(){
   //establish TCP connection with TCP Server with designate IP and Port
   c.stop();
@@ -196,7 +253,7 @@ void connectTCP(){
   Serial.println("send TCP connect");
   c.println(tcpdata);
   c.println();
-  Serial.println("Everything is okay - waiting TCP response:");
+  Serial.println("waiting TCP response:");
 } //connectTCP
 
 void heartBeat(){
@@ -205,50 +262,10 @@ void heartBeat(){
   c.println();
     
 } //heartBeat
-/**************************/
 
-//Vérifier + Téléverser le code sur le PORT4 Debug, ouvrir le terminal sur le PORT5 Modem pour visualiser
-gpsSentenceInfoStruct info;
-
-void setup() {
-  // put your setup code here, to run once:obligatoire, même vide
-  
-  /******connection internet******/
-   LTask.begin();
-  LWiFi.begin();
-  Serial.begin(115200);
-  while(!Serial) delay(1000); /* comment out this line when Serial is not present, ie. run this demo without connect to PC */
-
-  Serial.println("Connecting to AP");
-  while (0 == LWiFi.connect(WIFI_AP, LWiFiLoginInfo(WIFI_AUTH, WIFI_PASSWORD)))
-  {
-    delay(1000);
-  }
-  
-  Serial.println("calling connection");
-
-  while (!c2.connect(SITE_URL, 80))
-  {
-    Serial.println("Re-Connecting to WebSite");
-    delay(1000);
-  }
-  delay(100);
-
-  pinMode(13, OUTPUT);
-  getconnectInfo();
-  connectTCP();
-  /*********/
-
-  LGPS.powerOn();
-  Serial.println("Demarrage GPS..."); 
-  delay(3000);
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:= int main(void)
-  
-  /****************************/
-   //Check for TCP socket command from MCS Server 
+void loop()
+{
+  //Check for TCP socket command from MCS Server 
   String tcpcmd="";
   while (c.available())
    {
@@ -257,13 +274,16 @@ void loop() {
       {
         Serial.print((char)v);
         tcpcmd += (char)v;
+
+        // substring(40) looks at the 40th position in the string (which so happens to be when it starts with LED_Control)
+        // If this is equal to LED_Control,1 then I should turn it on, if it's LED_Control,0 then turn it off
         if (tcpcmd.substring(40).equals(tcpcmd_led_on)){
           digitalWrite(13, HIGH);
-          Serial.print("Switch LED ON ");
+          Serial.println("Switch LED ON ");
           tcpcmd="";
         }else if(tcpcmd.substring(40).equals(tcpcmd_led_off)){  
           digitalWrite(13, LOW);
-          Serial.print("Switch LED OFF");
+          Serial.println("Switch LED OFF");
           tcpcmd="";
         }
       }
@@ -280,15 +300,34 @@ void loop() {
     uploadstatus();
     lrtc1 = rtc1;
   }
-  /****************************/
   
-  //Serial.println("LGPS loop"); 
-  LGPS.getData(&info);
-  Serial.println("***************"); 
-  Serial.println("Trame GPGGA :"); 
-  Serial.println((char*)info.GPGGA); //affichage trame brute GPGGA
+}
+
+static double getDoubleNumber(const char *s)
+{
+  char buf[10];
+  unsigned char i;
+  double rev;
   
-  Serial.println("Donnees recoltees :"); 
-  parseGPGGA((const char*)info.GPGGA); // traitement de la trame GPGGA
-  delay(2000);
+  i=getComma(1, s);
+  i = i - 1;
+  strncpy(buf, s, i);
+  buf[i] = 0;
+  rev=atof(buf);
+  Serial.println(buf);
+  return rev; 
+}
+
+static unsigned char getComma(unsigned char num,const char *str)
+{
+  unsigned char i,j = 0;
+  int len=strlen(str);
+  for(i = 0;i < len;i ++)
+  {
+     if(str[i] == ',')
+      j++;
+     if(j == num)
+      return i + 1; 
+  }
+  return 0; 
 }

@@ -1,9 +1,14 @@
 #include <LGPS.h>
 #include "position.h"
-
+#include "wificonnect.h"
 
 char buff[256];
 char buffsf[256];
+
+ double latitude;
+ double longitude;
+ int tmp, hour, minute, second, num, hoursf, hourfr ;
+
 
 static unsigned char getComma(unsigned char num,const char *str)
 {
@@ -74,9 +79,6 @@ void parseGPGGA(const char* GPGGAstr) //traitement de la trame GPGGA
    *  (empty field) DGPS station ID number
    *  *47          the checksum data, always begins with *
    */
-  double latitude;
-  double longitude;
-  int tmp, hour, minute, second, num, hoursf, hourfr ;
   
   if(GPGGAstr[0] == '$')
   {
@@ -100,10 +102,24 @@ void parseGPGGA(const char* GPGGAstr) //traitement de la trame GPGGA
     sprintf(buff, "Heure France : %2d-%2d-%2d", hourfr, minute, second);
     Serial.println(buff);
     
-    tmp = getComma(2, GPGGAstr);
-    latitude = getDoubleNumber(&GPGGAstr[tmp]);
+
+	
+    /*tmp = getComma(2, GPGGAstr); // ancien calcul trame GPS
+	latitude = getDoubleNumber(&GPGGAstr[tmp]); 
     tmp = getComma(4, GPGGAstr);
-    longitude = getDoubleNumber(&GPGGAstr[tmp]);
+    longitude = getDoubleNumber(&GPGGAstr[tmp]);*/
+	
+	tmp = getComma(2, GPGGAstr);
+    latitude = getDoubleNumber(&GPGGAstr[tmp])/100.0;
+    int latitude_int=floor(latitude);
+    double latitude_decimal=(latitude-latitude_int)*100.0/60.0;
+    latitude=latitude_int+latitude_decimal;
+	
+    tmp = getComma(4, GPGGAstr);
+    longitude = getDoubleNumber(&GPGGAstr[tmp])/100.0;
+    int longitude_int=floor(longitude);
+    double longitude_decimal=(longitude-longitude_int)*100.0/60.0;
+    longitude=longitude_int+longitude_decimal;
     
     sprintf(buff, "latitude = %10.4f, longitude = %10.4f", latitude, longitude);
     Serial.println(buff); 
@@ -118,4 +134,8 @@ void parseGPGGA(const char* GPGGAstr) //traitement de la trame GPGGA
   {
     Serial.println("Not get data"); 
   }
+  
+ uploadGPS(latitude,longitude);
+  
 }
+
