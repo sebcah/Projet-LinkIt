@@ -65,7 +65,10 @@ void uploadGPS(){
   }
   
   delay(100);
-
+  
+  //double latitude = 50;
+  //double longitude = 60;
+  
   float latitude_post=latitude;
   float longitude_post=longitude;
   Serial.printf("latitude=%.4f\tlongitude=%.4f\n",latitude,longitude);

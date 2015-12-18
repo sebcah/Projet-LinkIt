@@ -4,11 +4,13 @@ void wifiprint();
 
 void TCPsock();
 
-void getconnectInfo();
-
 void uploadstatus();
+
+void getconnectInfo();
 
 void connectTCP();
 
 void heartBeat();
+
+void uploadGPS(double latitude, double longitude);
 

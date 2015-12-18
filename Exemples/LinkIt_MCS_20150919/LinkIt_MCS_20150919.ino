@@ -46,7 +46,6 @@ HttpClient http(c2);
 
 void setup()
 {
-  Serial.println("=============SETUP============");
   pinMode(13, OUTPUT); // LED connected to digital pin 13
   LTask.begin();
   LWiFi.begin();
@@ -57,12 +56,11 @@ void setup()
   AP_connect(); //connect.ino : connexion internet
   getconnectInfo();
   connectTCP();
-  Serial.println("==============================");
 }
 
 void loop()
 {
-  Serial.println("=============LOOP============");
+  Serial.println("*******************");
   String tcpcmd="";
   while (c.available())
    {
@@ -91,7 +89,6 @@ void loop()
   //Check for report datapoint status interval
   LDateTime.getRtc(&rtc1);
   if ((rtc1 - lrtc1) >= per1) {
-    
     uploadstatus();
     GPS_receive();
     uploadGPS();

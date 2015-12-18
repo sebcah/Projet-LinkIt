@@ -17,6 +17,9 @@
 #include <LWiFiClient.h>
 #include <LDateTime.h>
 
+char buffer_latitude[8];
+char buffer_longitude[8];
+
 /************connection internet**************/
 
 unsigned int rtc;
@@ -40,7 +43,7 @@ HttpClient http(c2);
 
 void wifiprint(){
     
-  while(!Serial) delay(1000); /* comment out this line when Serial is not present, ie. run this demo without connect to PC */
+  //while(!Serial) delay(1000); /* comment out this line when Serial is not present, ie. run this demo without connect to PC */
     
   Serial.println("Connecting to AP");
   while (0 == LWiFi.connect(WIFI_AP, LWiFiLoginInfo(WIFI_AUTH, WIFI_PASSWORD)))
@@ -59,7 +62,7 @@ void wifiprint(){
 }
 
 void TCPsock(){
-   //Check for TCP socket command from MCS Server 
+   //Check for TCP socket command from MCS Server, pilotage de la LED
   String tcpcmd="";
   while (c.available())
    {
@@ -70,16 +73,17 @@ void TCPsock(){
         tcpcmd += (char)v;
         if (tcpcmd.substring(40).equals(tcpcmd_led_on)){
           digitalWrite(13, HIGH);
-          Serial.print("Switch LED ON ");
+          Serial.println();
+          Serial.println("Switch LED ON ");
           tcpcmd="";
         }else if(tcpcmd.substring(40).equals(tcpcmd_led_off)){  
           digitalWrite(13, LOW);
-          Serial.print("Switch LED OFF");
+          Serial.println();
+          Serial.println("Switch LED OFF");
           tcpcmd="";
         }
       }
    }
-
   LDateTime.getRtc(&rtc);
   if ((rtc - lrtc) >= per) {
     heartBeat();
@@ -88,10 +92,80 @@ void TCPsock(){
   //Check for report datapoint status interval
   LDateTime.getRtc(&rtc1);
   if ((rtc1 - lrtc1) >= per1) {
-    uploadstatus();
+    uploadstatus(); // vérifie si LED bien allumée ou éteinte
     lrtc1 = rtc1;
   }
   /****************************/
+}
+
+ void uploadstatus(){
+  //calling RESTful API to upload datapoint to MCS to report LED status
+  //Serial.println("calling connection");
+  LWiFiClient c2;  
+
+  while (!c2.connect(SITE_URL, 80))
+  {
+    Serial.println("Re-Connecting to WebSite");
+    delay(1000);
+  }
+  delay(100);
+  
+  if(digitalRead(13)==1)
+	upload_led = "LED_Display,,1";
+  else
+	upload_led = "LED_Display,,0";
+
+  int thislength = upload_led.length();
+  HttpClient http(c2);
+  c2.print("POST /mcs/v2/devices/");
+  c2.print(DEVICEID);
+  c2.println("/datapoints.csv HTTP/1.1");
+  c2.print("Host: ");
+  c2.println(SITE_URL);
+  c2.print("deviceKey: ");
+  c2.println(DEVICEKEY);
+  c2.print("Content-Length: ");
+  c2.println(thislength);
+  c2.println("Content-Type: text/csv");
+  c2.println("Connection: close");
+  c2.println();
+  c2.println(upload_led);
+  
+  delay(500);
+
+  int errorcount = 0;
+  while (!c2.available())
+  {
+    //Serial.println("waiting HTTP response: ");
+    //Serial.println(errorcount);
+    errorcount += 1;
+    if (errorcount > 10) {
+      c2.stop();
+      return;
+    }
+    delay(100);
+  }
+  int err = http.skipResponseHeaders();
+
+  int bodyLen = http.contentLength();
+  //Serial.print("Content length is: ");
+  //Serial.println(bodyLen);
+  //Serial.println();
+  while (c2)
+  {
+    int v = c2.read();
+    if (v != -1)
+    {
+      Serial.print(char(v));
+    }
+    else
+    {
+      Serial.println("no more content, disconnect");
+      c2.stop();
+
+    }
+    
+  }
 }
   
 void getconnectInfo(){
@@ -111,7 +185,7 @@ void getconnectInfo(){
   int errorcount = 0;
   while (!c2.available())
   {
-    Serial.println("waiting HTTP response: ");
+    Serial.print("waiting HTTP response: ");
     Serial.println(errorcount);
     errorcount += 1;
     if (errorcount > 10) {
@@ -170,74 +244,6 @@ void getconnectInfo(){
 
 } //getconnectInfo
 
-void uploadstatus(){
-  //calling RESTful API to upload datapoint to MCS to report LED status
-  Serial.println("calling connection");
-  LWiFiClient c2;  
-
-  while (!c2.connect(SITE_URL, 80))
-  {
-    Serial.println("Re-Connecting to WebSite");
-    delay(1000);
-  }
-  delay(100);
-  if(digitalRead(13)==1)
-  upload_led = "LED_Display,,1";
-  else
-  upload_led = "LED_Display,,0";
-  int thislength = upload_led.length();
-  HttpClient http(c2);
-  c2.print("POST /mcs/v2/devices/");
-  c2.print(DEVICEID);
-  c2.println("/datapoints.csv HTTP/1.1");
-  c2.print("Host: ");
-  c2.println(SITE_URL);
-  c2.print("deviceKey: ");
-  c2.println(DEVICEKEY);
-  c2.print("Content-Length: ");
-  c2.println(thislength);
-  c2.println("Content-Type: text/csv");
-  c2.println("Connection: close");
-  c2.println();
-  c2.println(upload_led);
-  
-  delay(500);
-
-  int errorcount = 0;
-  while (!c2.available())
-  {
-    Serial.print("waiting HTTP response: ");
-    Serial.println(errorcount);
-    errorcount += 1;
-    if (errorcount > 10) {
-      c2.stop();
-      return;
-    }
-    delay(100);
-  }
-  int err = http.skipResponseHeaders();
-
-  int bodyLen = http.contentLength();
-  Serial.print("Content length is: ");
-  Serial.println(bodyLen);
-  Serial.println();
-  while (c2)
-  {
-    int v = c2.read();
-    if (v != -1)
-    {
-      Serial.print(char(v));
-    }
-    else
-    {
-      Serial.println("no more content, disconnect");
-      c2.stop();
-
-    }
-    
-  }
-}
-
 void connectTCP(){
   //establish TCP connection with TCP Server with designate IP and Port
   c.stop();
@@ -261,4 +267,67 @@ void heartBeat(){
   c.println();
     
 } //heartBeat
-/**************************/
+
+void uploadGPS(double latitude, double longitude){
+
+  while (!c2.connect(SITE_URL, 80))
+  {
+    Serial.print(".");
+    delay(500);
+  }
+  
+  delay(100);
+
+  float latitude_post=latitude;
+  float longitude_post=longitude;
+  
+  //Serial.printf("latitude=%.4f\tlongitude=%.4f\n",latitude,longitude);
+  if(latitude>-90 && latitude<=90 && longitude>=0 && longitude<360){
+    sprintf(buffer_latitude, "%.4f", latitude);
+    sprintf(buffer_longitude, "%.4f", longitude);
+  }
+
+  String upload_GPS = "GPS,,"+String(buffer_latitude)+","+String(buffer_longitude)+","+"0"+"\n"+"LATITUDE,,"+buffer_latitude+"\n"+"LONGITUDE,,"+buffer_longitude;//null altitude
+  int GPS_length = upload_GPS.length();
+  HttpClient http(c2);
+  c2.print("POST /mcs/v2/devices/");
+  c2.print(DEVICEID);
+  c2.println("/datapoints.csv HTTP/1.1");
+  c2.print("Host: ");
+  c2.println(SITE_URL);
+  c2.print("deviceKey: ");
+  c2.println(DEVICEKEY);
+  c2.print("Content-Length: ");
+  c2.println(GPS_length);
+  c2.println("Content-Type: text/csv");
+  c2.println("Connection: close");
+  c2.println();
+  c2.println(upload_GPS);
+  delay(500);
+
+  int errorcount = 0;
+  
+  while (!c2.available())
+  {
+    Serial.print(".");
+    delay(100);
+  }
+  int err = http.skipResponseHeaders();
+  int bodyLen = http.contentLength();
+  
+  while (c2)
+  {
+    int v = c2.read();
+    if (v != -1)
+    {
+      Serial.print(char(v));
+    }
+    else
+    {
+      Serial.println("no more content, disconnect");
+      c2.stop();
+    }
+    
+  }
+  Serial.println();
+}

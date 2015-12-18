@@ -1,3 +1,15 @@
+#include <LGPS.h>
+#include "position.h"
+#include "wificonnect.h"
+
+char buff[256];
+char buffsf[256];
+
+ double latitude;
+ double longitude;
+ int tmp, hour, minute, second, num, hoursf, hourfr ;
+
+
 static unsigned char getComma(unsigned char num,const char *str)
 {
   unsigned char i,j = 0;
@@ -40,8 +52,7 @@ static double getIntNumber(const char *s)
   return rev; 
 }
 
-
-void parseGPGGA(const char* GPGGAstr)
+void parseGPGGA(const char* GPGGAstr) //traitement de la trame GPGGA
 {
   /* Refer to http://www.gpsinformation.org/dale/nmea.htm#GGA
    * Sample data: $GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47
@@ -69,22 +80,41 @@ void parseGPGGA(const char* GPGGAstr)
    *  *47          the checksum data, always begins with *
    */
   
-  int tmp, hour, minute, second, num ;
   if(GPGGAstr[0] == '$')
   {
     tmp = getComma(1, GPGGAstr);
-    hour     = (GPGGAstr[tmp + 0] - '0') * 10 + (GPGGAstr[tmp + 1] - '0');
+    hour = (GPGGAstr[tmp + 0] - '0') * 10 + (GPGGAstr[tmp + 1] - '0');
+    
+    //heure a San Francisco
+    if (hour > 7){ 
+      hoursf = hour - 7;
+    }
+    else {
+      hoursf = hour + 17;
+    } 
+    
+    //heure en France
+    hourfr = hour + 1;
+    
     minute   = (GPGGAstr[tmp + 2] - '0') * 10 + (GPGGAstr[tmp + 3] - '0');
-    second    = (GPGGAstr[tmp + 4] - '0') * 10 + (GPGGAstr[tmp + 5] - '0');
+    second   = (GPGGAstr[tmp + 4] - '0') * 10 + (GPGGAstr[tmp + 5] - '0');
     
-    sprintf(buff, "UTC timer %2d-%2d-%2d", hour, minute, second);
-    //Serial.println(buff);
+    sprintf(buff, "Heure France : %2d-%2d-%2d", hourfr, minute, second);
+    Serial.println(buff);
     
-    tmp = getComma(2, GPGGAstr);
+
+	
+    /*tmp = getComma(2, GPGGAstr); // ancien calcul trame GPS
+	latitude = getDoubleNumber(&GPGGAstr[tmp]); 
+    tmp = getComma(4, GPGGAstr);
+    longitude = getDoubleNumber(&GPGGAstr[tmp]);*/
+	
+	tmp = getComma(2, GPGGAstr);
     latitude = getDoubleNumber(&GPGGAstr[tmp])/100.0;
     int latitude_int=floor(latitude);
     double latitude_decimal=(latitude-latitude_int)*100.0/60.0;
     latitude=latitude_int+latitude_decimal;
+	
     tmp = getComma(4, GPGGAstr);
     longitude = getDoubleNumber(&GPGGAstr[tmp])/100.0;
     int longitude_int=floor(longitude);
@@ -92,21 +122,20 @@ void parseGPGGA(const char* GPGGAstr)
     longitude=longitude_int+longitude_decimal;
     
     sprintf(buff, "latitude = %10.4f, longitude = %10.4f", latitude, longitude);
-    //Serial.println(buff); 
+    Serial.println(buff); 
     
     tmp = getComma(7, GPGGAstr);
     num = getIntNumber(&GPGGAstr[tmp]);    
-    sprintf(buff, "satellites number = %d", num);
-    //Serial.println(buff); 
+    
+    sprintf(buff, "nombres de satellites = %d", num);
+    Serial.println(buff); 
   }
   else
   {
     Serial.println("Not get data"); 
   }
+  
+ uploadGPS(latitude,longitude);
+  
 }
 
-void GPS_receive() {
-  LGPS.getData(&info);
-  //Serial.println((char*)info.GPGGA); 
-  parseGPGGA((const char*)info.GPGGA);
-}
