@@ -55,7 +55,7 @@ void getconnectInfo(){
   int errorcount = 0;
   while (!c2.available())
   {
-    Serial.print("waiting HTTP response: ");
+    Serial.println("waiting HTTP response: ");
     Serial.println(errorcount);
     errorcount += 1;
     if (errorcount > 10) {
@@ -92,7 +92,6 @@ void getconnectInfo(){
       c2.stop();
     }  
   }
-  Serial.println();
   Serial.print("The connection info: ");
   Serial.println(connection_info);
   int i;
@@ -165,6 +164,7 @@ void uploadstatus(){
   int bodyLen = http.contentLength();
   Serial.print("Content length is: ");
   Serial.println(bodyLen);
+  Serial.println();
   while (c2)
   {
     int v = c2.read();
@@ -177,9 +177,9 @@ void uploadstatus(){
       Serial.println("no more content, disconnect");
       c2.stop();
 
-    }    
+    }
+    
   }
-  Serial.println();
 }
 
 void connectTCP(){
@@ -237,19 +237,17 @@ void setup() {
   pinMode(13, OUTPUT);
   getconnectInfo();
   connectTCP();
-  
   /*********/
-  
+
   LGPS.powerOn();
   Serial.println("Demarrage GPS..."); 
   delay(3000);
-  
-  Serial.println("*************LOOP**********");
 }
 
 void loop() {
   // put your main code here, to run repeatedly:= int main(void)
   
+  /****************************/
    //Check for TCP socket command from MCS Server 
   String tcpcmd="";
   while (c.available())
@@ -261,13 +259,11 @@ void loop() {
         tcpcmd += (char)v;
         if (tcpcmd.substring(40).equals(tcpcmd_led_on)){
           digitalWrite(13, HIGH);
-          Serial.println();
-          Serial.println("Switch LED ON ");
+          Serial.print("Switch LED ON ");
           tcpcmd="";
         }else if(tcpcmd.substring(40).equals(tcpcmd_led_off)){  
           digitalWrite(13, LOW);
-          Serial.println();
-          Serial.println("Switch LED OFF");
+          Serial.print("Switch LED OFF");
           tcpcmd="";
         }
       }
