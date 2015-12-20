@@ -19,6 +19,7 @@
 #define DEVICEKEY "biiuBqGb8s60iHWT" // on MCS website, created with the project
 #define SITE_URL "api.mediatek.com"
 
+
 /************connection internet**************/
 LWiFiClient c;
 unsigned int rtc;
@@ -92,7 +93,7 @@ void getconnectInfo(){
       c2.stop();
     }  
   }
-  Serial.print("The connection info: ");
+  Serial.println("The connection info: ");
   Serial.println(connection_info);
   int i;
   for(i=0;i<separater;i++)
