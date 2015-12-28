@@ -9,8 +9,10 @@
 #include "wificonnect.h"
 #include "connectgsm.h"
 
-//Vérifier + Téléverser le code sur le PORT6 Debug, ouvrir le terminal sur le PORT3 Modem pour visualiser
+//Vérifier + Téléverser le code sur le PORT Debug, ouvrir le terminal sur le PORT Modem pour visualiser
 gpsSentenceInfoStruct info;
+
+int flag = 0;
 
 void setup() {
   // put your setup code here, to run once:obligatoire, même vide
@@ -19,11 +21,11 @@ void setup() {
   Serial.begin(115200);
   
   /******connection internet******/
-  /*LTask.begin();
+  LTask.begin();
   LWiFi.begin();
   wifiprint(); // affichage console etat TCP-IP
   getconnectInfo();
-  connectTCP();*/
+  connectTCP();
   /******connection GPS******/
   LGPS.powerOn();
   Serial.println("Demarrage GPS..."); 
@@ -50,11 +52,19 @@ void setup() {
 }
 
 void loop() {
+  
+  /*if (flag ==0){
+    LSMS.beginSMS("0652680892"); //envoie d'un SMS
+    LSMS.print("GPS");
+    LSMS.endSMS();
+    flag = 1;
+    }*/
+  
   Serial.println("***************"); 
-  //TCPsock(); // pilotage de la LED via le site internet MCS
+  TCPsock(); // pilotage de la LED via le site internet MCS
   //Serial.println("LGPS loop"); 
   LGPS.getData(&info);
-  Serial.println("Trame GPGGA :"); 
+  //Serial.println("Trame GPGGA :"); 
   //Serial.println((char*)info.GPGGA); //affichage trame brute GPGGA
   Serial.println("Donnees recoltees :"); 
   parseGPGGA((const char*)info.GPGGA); // traitement de la trame GPGGA
