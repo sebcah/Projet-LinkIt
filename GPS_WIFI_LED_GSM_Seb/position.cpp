@@ -7,7 +7,7 @@ char buffsf[256];
 
  double latitude;
  double longitude;
- int tmp, hour, minute, second, num, hoursf, hourfr ;
+ int tmp, hour, minute, second, numsat, hoursf, hourfr, num ;
 
 static unsigned char getComma(unsigned char num,const char *str)
 {
@@ -124,17 +124,25 @@ void parseGPGGA(const char* GPGGAstr) //traitement de la trame GPGGA
     Serial.println(buff); 
     
     tmp = getComma(7, GPGGAstr);
-    num = getIntNumber(&GPGGAstr[tmp]);    
+    numsat = getIntNumber(&GPGGAstr[tmp]);    
     
-    sprintf(buff, "nombres de satellites = %d", num);
+    sprintf(buff, "nombres de satellites = %d", numsat);
     Serial.println(buff); 
+    
+    if (numsat != 0)
+    {
+    digitalWrite(13, HIGH);             // LED on
+    delay(1000);
+    digitalWrite(13, LOW);              // LED off
+    delay(100);
+    }
   }
   else
   {
     Serial.println("Not get data"); 
   }
   
- //uploadGPS(latitude,longitude);
+ uploadGPS(latitude,longitude);
   
 }
 
