@@ -2,6 +2,7 @@
 
 extern double latitude;
 extern double longitude;
+extern int numsat;
 
 void connectGSM()
 {
@@ -54,6 +55,8 @@ void connectGSM()
             LSMS.print(latitude);
             LSMS.print(" , longitude : ");
             LSMS.print(longitude);
+            LSMS.print("Nombre de Satellites : ");
+            LSMS.print(numsat);
             LSMS.endSMS();
             Serial.println("Données GPS envoyées par SMS");
         }
